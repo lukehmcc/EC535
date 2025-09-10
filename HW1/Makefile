@@ -3,7 +3,7 @@ BUILD_DIR := ./build
 SRC_DIR := ./src
 
 # The generated vars
-SRCS := $(wildcard $(SRC_DIR)/*.cpp)
+SRCS := $(wildcard $(SRC_DIR)/*.c)
 TARGET := $(BUILD_DIR)/main
 
 # Add the phony to keep overlapping files from breaking build
