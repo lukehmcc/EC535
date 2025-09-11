@@ -8,6 +8,7 @@ int main(int argc, char *argv[]) {
            "MyBitApp <inputFile> <outputFile>\n"
            "  - inputFile: Path to the input text file\n"
            "  - outputFile: Path to the output text file\n");
+    return 0;
   }
   // Set up the files
   FILE *inFile = fopen(argv[1], "r");
