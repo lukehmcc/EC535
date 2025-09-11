@@ -1,10 +1,23 @@
 #include "bits.h"
 #include <stdio.h>
-int main() {
-  // Read in the ints to a list
-  FILE *inFile = fopen("./input.txt", "r");
+#include <stdlib.h>
+int main(int argc, char *argv[]) {
+  // Create help message
+  if (argc != 3) {
+    printf("Error: Incorrect arguments provided.\nUsage: "
+           "MyBitApp <inputFile> <outputFile>\n"
+           "  - inputFile: Path to the input text file\n"
+           "  - outputFile: Path to the output text file\n");
+  }
+  // Set up the files
+  FILE *inFile = fopen(argv[1], "r");
   if (inFile == NULL) {
-    perror("Error opening inFile");
+    printf("Error: Failed to open inFile: %s\n", argv[1]);
+    return 1;
+  }
+  FILE *outFile = fopen(argv[2], "w");
+  if (outFile == NULL) {
+    printf("Error: Failed to open outFile: %s\n", argv[2]);
     return 1;
   }
   // There are only 14 ints, were just going to assume it's less than 100
@@ -29,16 +42,9 @@ int main() {
     countedSequences[i] = CountSequence(integers[i]);
   }
 
-  // Then close it out by writing those values out to a outFile
-  FILE *outFile = fopen("./output.txt", "w");
-  if (outFile == NULL) {
-    perror("Error opening outFile");
-    return 1;
-  }
-
   // write out those values
   for (int i = 0; i < lengthOfInput; i++) {
-    fprintf(outFile, "%d  > %d\n", mirrors[i], countedSequences[i]);
+    fprintf(outFile, "%u  > %u\n", mirrors[i], countedSequences[i]);
   }
 
   fclose(outFile);

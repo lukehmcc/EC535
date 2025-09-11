@@ -1,5 +1,5 @@
 #include "bits.h"
-#include <stdio.h>
+#include <math.h>
 #include <stdlib.h>
 
 char *intToString(unsigned int n);
@@ -20,49 +20,42 @@ unsigned int BinaryMirror(unsigned int input) {
   return flipped;
 }
 unsigned int CountSequence(unsigned int input) { // first
-  return 1;
+  char *binary = intToString(input);
+  int count = 0;
+  for (int i = 0; binary[i + 2] != '\0'; i++) {
+    if (binary[i] == '0' && binary[i + 1] == '1' && binary[i + 2] == '0')
+      count++;
+  }
+  return count;
 }
 
 char *intToString(unsigned int n) {
-  int c, k, i;
-  char *binary = (char *)malloc(33 * sizeof(char));
-  i = 0;
-
-  for (c = 31; c >= 0; c--) {
-    k = n >> c;
-
-    if (k & 1) {
-      binary[i] = '1';
+  // LITTLE endian binary representation
+  char *constructor = (char *)malloc(33 * sizeof(char));
+  unsigned int toDeconstruct = n;
+  for (int i = 31; i >= 0; i--) {
+    if (toDeconstruct >= pow(2, i)) {
+      toDeconstruct -= pow(2, i);
+      constructor[31 - i] = '1';
     } else {
-      binary[i] = '0';
+      constructor[31 - i] = '0';
     }
-    i++;
   }
+  constructor[32] = '\0';
 
-  binary[i] = '\0';
-
-  return binary;
+  return constructor;
 }
 
 unsigned int stringToInt(const char *binary) {
   unsigned int result = 0;
-  int i = 0;
-
-  while (binary[i] == ' ' || binary[i] == '\t') {
-    i++;
-  }
-
-  while (binary[i] != '\0') {
-    result <<= 1;
-
-    if (binary[i] == '1') {
-      result |= 1;
-    } else if (binary[i] != '0') {
-      printf("Error: Invalid binary digit '%c' at position %d\n", binary[i], i);
-      return 0;
+  // just walk through and reconstruct the number
+  for (int i = 31; i >= 0; i--) {
+    char current = binary[31 - i];
+    if (current == '1') {
+      result += (1U << i);
+    } else {
+      // do nothing
     }
-
-    i++;
   }
 
   return result;
