@@ -1,4 +1,5 @@
 #include "bits.h"
+#include "mylist.h"
 #include <stdio.h>
 #include <stdlib.h>
 int main(int argc, char *argv[]) {
@@ -35,17 +36,23 @@ int main(int argc, char *argv[]) {
 
   // We now know how long it is so assign two lists to handle the new vals
   int lengthOfInput = i;
-  int mirrors[lengthOfInput];
-  int countedSequences[lengthOfInput];
+  MyList *head = NULL;
 
   for (int i = 0; i < lengthOfInput; i++) {
-    mirrors[i] = BinaryMirror(integers[i]);
-    countedSequences[i] = CountSequence(integers[i]);
+    unsigned int mirror = BinaryMirror(integers[i]);
+    int counted = CountSequence(integers[i]);
+    char *binary = UIntToBinary(integers[i]);
+    char *ascii = UIntToAscii(integers[i]);
+    MyList *node =
+        create_MyList_node(integers[i], mirror, counted, binary, ascii, NULL);
+    head = insert_MyList_sorted(head, node);
   }
 
   // write out those values
-  for (int i = 0; i < lengthOfInput; i++) {
-    fprintf(outFile, "%u  > %u\n", mirrors[i], countedSequences[i]);
+  MyList *current = head;
+  while (current != NULL) {
+    fprintf(outFile, "%u  > %u\n", current->mirror, current->counted);
+    current = current->next;
   }
 
   fclose(outFile);

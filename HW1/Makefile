@@ -12,7 +12,7 @@ TARGET := $(BUILD_DIR)/MyBitApp
 # The targets (build is default)
 build:  $(SRCS) 
 	mkdir -p $(BUILD_DIR)
-	$(CXX) -std=c++17 $(SRCS) -o $(TARGET)
+	gcc -std=c11 -Wall -Wextra -O2 $(SRCS) -o $(TARGET)
 
 clean:
 	rm -rf ${BUILD_DIR}
