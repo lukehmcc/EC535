@@ -65,6 +65,6 @@ char *UIntToAscii(unsigned int n) {
   char *buf = (char *)malloc(11 * sizeof(char));
   if (!buf)
     return NULL;
-  sprintf(buf, "0x%08X", n); // use 8 digits because that can store 32 bits
+  sprintf(buf, "%u", n); // use 8 digits because that can store 32 bits
   return buf;
 }

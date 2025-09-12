@@ -1,5 +1,4 @@
 #include "mylist.h"
-#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 MyList *create_MyList_node(unsigned int input, unsigned int mirror, int counted,

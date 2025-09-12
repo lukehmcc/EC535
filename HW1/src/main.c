@@ -42,7 +42,7 @@ int main(int argc, char *argv[]) {
     unsigned int mirror = BinaryMirror(integers[i]);
     int counted = CountSequence(integers[i]);
     char *binary = UIntToBinary(integers[i]);
-    char *ascii = UIntToAscii(integers[i]);
+    char *ascii = UIntToAscii(mirror);
     MyList *node =
         create_MyList_node(integers[i], mirror, counted, binary, ascii, NULL);
     head = insert_MyList_sorted(head, node);
@@ -51,7 +51,7 @@ int main(int argc, char *argv[]) {
   // write out those values
   MyList *current = head;
   while (current != NULL) {
-    fprintf(outFile, "%u  > %u\n", current->mirror, current->counted);
+    fprintf(outFile, "%u    %u\n", current->mirror, current->counted);
     current = current->next;
   }
 
