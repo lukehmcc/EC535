@@ -1,0 +1,1 @@
+cmd_/ad/eng/users/l/u/lukehmcc/classes/EC535/lab2/ldd/fortune.ko := arm-linux-gnueabihf-ld -r  -EL -T ./scripts/module-common.lds -T ./arch/arm/kernel/module.lds  --build-id  -o /ad/eng/users/l/u/lukehmcc/classes/EC535/lab2/ldd/fortune.ko /ad/eng/users/l/u/lukehmcc/classes/EC535/lab2/ldd/fortune.o /ad/eng/users/l/u/lukehmcc/classes/EC535/lab2/ldd/fortune.mod.o ;  true

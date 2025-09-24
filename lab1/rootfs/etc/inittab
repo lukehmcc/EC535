@@ -1,0 +1,8 @@
+::sysinit:/bin/mount -t proc proc /proc
+::sysinit:/bin/mount -t sysfs sysfs /sys
+::sysinit:/bin/mount -o remount,rw /
+::sysinit:/bin/hostname -F /etc/hostname
+::sysinit:/bin/cat /usr/local/ec535/banner.ascii
+::sysinit:/usr/sbin/crond
+::respawn:/sbin/getty -L ttyAMA0 115200 vt100
+::shutdown:/bin/umount -a -r
