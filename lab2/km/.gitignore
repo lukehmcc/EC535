@@ -1,0 +1,6 @@
+Module.symvers
+modules.order
+mytimer.ko
+mytimer.mod.c 
+mytimer.mod.o 
+mytimer.o

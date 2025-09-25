@@ -16,27 +16,27 @@
 MODULE_LICENSE("Dual BSD/GPL");
 
 /* Declaration of memory.c functions */
-static int nibbler_open(struct inode *inode, struct file *filp);
-static int nibbler_release(struct inode *inode, struct file *filp);
-static ssize_t nibbler_read(struct file *filp,
+static int ktimer_open(struct inode *inode, struct file *filp);
+static int ktimer_release(struct inode *inode, struct file *filp);
+static ssize_t ktimer_read(struct file *filp,
 		char *buf, size_t count, loff_t *f_pos);
-static ssize_t nibbler_write(struct file *filp,
+static ssize_t ktimer_write(struct file *filp,
 		const char *buf, size_t count, loff_t *f_pos);
-static void nibbler_exit(void);
-static int nibbler_init(void);
+static void ktimer_exit(void);
+static int ktimer_init(void);
 
 /* Structure that declares the usual file */
 /* access functions */
-struct file_operations nibbler_fops = {
-	read: nibbler_read,
-	write: nibbler_write,
-	open: nibbler_open,
-	release: nibbler_release
+struct file_operations ktimer_fops = {
+	read: ktimer_read,
+	write: ktimer_write,
+	open: ktimer_open,
+	release: ktimer_release
 };
 
 /* Declaration of the init and exit functions */
-module_init(nibbler_init);
-module_exit(nibbler_exit);
+module_init(ktimer_init);
+module_exit(ktimer_exit);
 
 static unsigned capacity = 128;
 static unsigned bite = 128;
@@ -45,61 +45,61 @@ module_param(bite, uint, S_IRUGO);
 
 /* Global variables of the driver */
 /* Major number */
-static int nibbler_major = 61;
+static int ktimer_major = 61;
 
 /* Buffer to store data */
-static char *nibbler_buffer;
+static char *ktimer_buffer;
 /* length of the current message */
-static int nibbler_len;
+static int ktimer_len;
 
-static int nibbler_init(void)
+static int ktimer_init(void)
 {
 	int result;
 
 	/* Registering device */
-	result = register_chrdev(nibbler_major, "nibbler", &nibbler_fops);
+	result = register_chrdev(ktimer_major, "ktimer", &ktimer_fops);
 	if (result < 0)
 	{
 		printk(KERN_ALERT
-			"nibbler: cannot obtain major number %d\n", nibbler_major);
+			"ktimer: cannot obtain major number %d\n", ktimer_major);
 		return result;
 	}
 
-	/* Allocating nibbler for the buffer */
-	nibbler_buffer = kmalloc(capacity, GFP_KERNEL); 
-	if (!nibbler_buffer)
+	/* Allocating ktimer for the buffer */
+	ktimer_buffer = kmalloc(capacity, GFP_KERNEL); 
+	if (!ktimer_buffer)
 	{ 
 		printk(KERN_ALERT "Insufficient kernel memory\n"); 
 		result = -ENOMEM;
 		goto fail; 
 	} 
-	memset(nibbler_buffer, 0, capacity);
-	nibbler_len = 0;
+	memset(ktimer_buffer, 0, capacity);
+	ktimer_len = 0;
 
-	printk(KERN_ALERT "Inserting nibbler module\n"); 
+	printk(KERN_ALERT "Inserting ktimer module\n"); 
 	return 0;
 
 fail: 
-	nibbler_exit(); 
+	ktimer_exit(); 
 	return result;
 }
 
-static void nibbler_exit(void)
+static void ktimer_exit(void)
 {
 	/* Freeing the major number */
-	unregister_chrdev(nibbler_major, "nibbler");
+	unregister_chrdev(ktimer_major, "ktimer");
 
 	/* Freeing buffer memory */
-	if (nibbler_buffer)
+	if (ktimer_buffer)
 	{
-		kfree(nibbler_buffer);
+		kfree(ktimer_buffer);
 	}
 
-	printk(KERN_ALERT "Removing nibbler module\n");
+	printk(KERN_ALERT "Removing ktimer module\n");
 
 }
 
-static int nibbler_open(struct inode *inode, struct file *filp)
+static int ktimer_open(struct inode *inode, struct file *filp)
 {
 	printk(KERN_INFO "open called: process id %d, command %s\n",
 		current->pid, current->comm);
@@ -107,7 +107,7 @@ static int nibbler_open(struct inode *inode, struct file *filp)
 	return 0;
 }
 
-static int nibbler_release(struct inode *inode, struct file *filp)
+static int ktimer_release(struct inode *inode, struct file *filp)
 {
 	printk(KERN_INFO "release called: process id %d, command %s\n",
 		current->pid, current->comm);
@@ -115,27 +115,27 @@ static int nibbler_release(struct inode *inode, struct file *filp)
 	return 0;
 }
 
-static ssize_t nibbler_read(struct file *filp, char *buf, 
+static ssize_t ktimer_read(struct file *filp, char *buf, 
 							size_t count, loff_t *f_pos)
 { 
 	int temp;
 	char tbuf[256], *tbptr = tbuf;
 
 	/* end of buffer reached */
-	if (*f_pos >= nibbler_len)
+	if (*f_pos >= ktimer_len)
 	{
 		return 0;
 	}
 
 	/* do not go over then end */
-	if (count > nibbler_len - *f_pos)
-		count = nibbler_len - *f_pos;
+	if (count > ktimer_len - *f_pos)
+		count = ktimer_len - *f_pos;
 
 	/* do not send back more than a bite */
 	if (count > bite) count = bite;
 
 	/* Transfering data to user space */ 
-	if (copy_to_user(buf, nibbler_buffer + *f_pos, count))
+	if (copy_to_user(buf, ktimer_buffer + *f_pos, count))
 	{
 		return -EFAULT;
 	}
@@ -145,7 +145,7 @@ static ssize_t nibbler_read(struct file *filp, char *buf,
 		current->pid, current->comm, count);
 
 	for (temp = *f_pos; temp < count + *f_pos; temp++)					  
-		tbptr += sprintf(tbptr, "%c", nibbler_buffer[temp]);
+		tbptr += sprintf(tbptr, "%c", ktimer_buffer[temp]);
 
 	printk(KERN_INFO "%s\n", tbuf);
 
@@ -154,7 +154,7 @@ static ssize_t nibbler_read(struct file *filp, char *buf,
 	return count; 
 }
 
-static ssize_t nibbler_write(struct file *filp, const char *buf,
+static ssize_t ktimer_write(struct file *filp, const char *buf,
 							size_t count, loff_t *f_pos)
 {
 	int temp;
@@ -176,7 +176,7 @@ static ssize_t nibbler_write(struct file *filp, const char *buf,
 	if (count > capacity - *f_pos)
 		count = capacity - *f_pos;
 
-	if (copy_from_user(nibbler_buffer + *f_pos, buf, count))
+	if (copy_from_user(ktimer_buffer + *f_pos, buf, count))
 	{
 		return -EFAULT;
 	}
@@ -186,12 +186,12 @@ static ssize_t nibbler_write(struct file *filp, const char *buf,
 		current->pid, current->comm, count);
 
 	for (temp = *f_pos; temp < count + *f_pos; temp++)					  
-		tbptr += sprintf(tbptr, "%c", nibbler_buffer[temp]);
+		tbptr += sprintf(tbptr, "%c", ktimer_buffer[temp]);
 
 	printk(KERN_INFO "%s\n", tbuf);
 
 	*f_pos += count;
-	nibbler_len = *f_pos;
+	ktimer_len = *f_pos;
 
 	return count;
 }

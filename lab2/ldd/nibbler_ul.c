@@ -6,17 +6,17 @@
   Prepared by Matthew Yee
   
   Usage:
-    ./nibbler_ul [flag] [message]
+    ./ktimer_ul [flag] [message]
 	 
 	-r (read)
 	-w (write)
 	
   Examples:
-	./nibbler_ul -r
-		Print whatever message that the nibbler module is holding
+	./ktimer_ul -r
+		Print whatever message that the ktimer module is holding
 
-	./nibbler_ul -w ThisIsAMessage
-		Write the string "ThisIsAMessage" to the nibbler module
+	./ktimer_ul -w ThisIsAMessage
+		Write the string "ThisIsAMessage" to the ktimer module
 	
 ******************************************************/
 
@@ -26,12 +26,12 @@ int main(int argc, char **argv) {
 	char line[256];
 	int ii, count = 0;
 	
-	/* Check to see if the nibbler successfully has mknod run
-	   Assumes that nibbler is tied to /dev/nibbler */
+	/* Check to see if the ktimer successfully has mknod run
+	   Assumes that ktimer is tied to /dev/ktimer */
 	FILE * pFile;
-	pFile = fopen("/dev/nibbler", "r+");
+	pFile = fopen("/dev/ktimer", "r+");
 	if (pFile==NULL) {
-		fputs("nibbler module isn't loaded\n",stderr);
+		fputs("ktimer module isn't loaded\n",stderr);
 		return -1;
 	}
 
@@ -58,7 +58,7 @@ int main(int argc, char **argv) {
 
 void printManPage() {
 	printf("Error: invalid use.\n");
-	printf(" nibbler_ul [-flag] [message]\n");
-	printf(" -r: read from the nibbler module\n");	
-	printf(" -w: write [message] to the nibbler module\n");
+	printf(" ktimer_ul [-flag] [message]\n");
+	printf(" -r: read from the ktimer module\n");	
+	printf(" -w: write [message] to the ktimer module\n");
 }
