@@ -39,7 +39,7 @@ int main(int argc, char **argv) {
   // Check if listing
   if (argc == 2 && strcmp(argv[1], "-l") == 0) {
     while (fgets(line, 256, pFile) != NULL) {
-      printf("%s\n", line);
+      printf("%s", line);
     }
   }
   // check if setting max concurrent

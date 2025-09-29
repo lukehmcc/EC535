@@ -4,3 +4,4 @@ mytimer.ko
 mytimer.mod.c 
 mytimer.mod.o 
 mytimer.o
+.mytimer.o.cmd
