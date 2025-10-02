@@ -12,7 +12,7 @@ MODULE_LICENSE("GPL");
 MODULE_AUTHOR("Luke McCarthy");
 MODULE_DESCRIPTION("Simple echo module");
 
-static int major;
+
 static struct class *cls;
 
 struct my_timer_holder {
@@ -22,6 +22,7 @@ struct my_timer_holder {
 
 static struct my_timer_holder *my_timer; // set up timer & holder
 static int max_concurrency = 1;
+static int major = 61; // hard coded major number 
 
 static int mytimer_open(struct inode *, struct file *);
 static int mytimer_release(struct inode *, struct file *);
@@ -39,9 +40,16 @@ static struct file_operations fops = {.open = mytimer_open,
 static int __init mytimer_init(void) {
   // Define 
   int i;
+  int result;
 
   // set up module
-  major = register_chrdev(0, DEVICE_NAME, &fops);
+  result = register_chrdev(61, DEVICE_NAME, &fops);
+	if (result < 0)
+	{
+		printk(KERN_ALERT
+			"ktimer: cannot obtain major number %d\n", major);
+		return result;
+	}
   cls = class_create(THIS_MODULE, DEVICE_NAME);
   device_create(cls, NULL, MKDEV(major, 0), NULL, DEVICE_NAME);
 
