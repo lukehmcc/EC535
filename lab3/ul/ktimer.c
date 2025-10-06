@@ -15,9 +15,9 @@ int main(int argc, char **argv) {
 	int ii, count = 0;
 
 	// Opens to device file
-	pFile = open("/dev/fasync_example", O_RDWR);
+	pFile = open("/dev/mytimer", O_RDWR);
 	if (pFile < 0) {
-		fprintf (stderr, "fasync_example module isn't loaded\n");
+		fprintf (stderr, "mytimer module isn't loaded\n");
 		return 1;
 	}
 
