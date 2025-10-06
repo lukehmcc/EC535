@@ -1,5 +1,5 @@
 ifneq ($(KERNELRELEASE),)
-	obj-m := fasync_example.o
+	obj-m := mytimer.o
 else
 	KERNELDIR := $(EC535)/bbb/stock/stock-linux-4.19.82-ti-rt-r33
 	PWD := $(shell pwd)

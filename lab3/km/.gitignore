@@ -1,0 +1,6 @@
+.mytimer*
+Module.*
+modules.*
+mytimer.ko
+mytimer.mod.*
+mytimer.o
