@@ -10,7 +10,7 @@
 
 MODULE_LICENSE("GPL");
 MODULE_AUTHOR("Luke McCarthy");
-MODULE_DESCRIPTION("Simple echo module");
+MODULE_DESCRIPTION("Background Task Kernel Module");
 
 
 static struct class *cls;
