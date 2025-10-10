@@ -15,4 +15,4 @@ ktimer: $(OBJ)
 	$(CC) -o $@ $^ $(CFLAGS)
 	
 clean:
-	rm *.o fasync_tester
+	rm *.o ktimer
