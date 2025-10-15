@@ -1,3 +1,4 @@
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -19,23 +20,48 @@ int main(int argc, char *argv[]) {
   char **instructions = getInstructionsFromFile(file, &lineCount);
 
   // set up registers
-  int reg[6];
-  for (i = 0; i < 6; i++) {
+  int reg[7];
+  for (i = 1; i < 7; i++) {
     reg[i] = 0;
   }
+
   // set up flags
   int equal = 0;
+
+  // set up counters
+  int executedInstruction = 0;
+  int clockCycles = 0;
+  int totalMemoryHits = 0;
+  int localMemoryHits = 0;
+
+  // set up memory
+  uint8_t memory[256];
+  for (i = 0; i < 256; i++) {
+    memory[i] = 0;
+  }
+  uint8_t touched[256];
+  for (i = 0; i < 256; i++) {
+    touched[i] = 0;
+  }
 
   // Now move through instructions
   for (i = 0; i < lineCount; i++) {
     printf("Running Instruction: %d: %s\n", i, instructions[i]);
+    executedInstruction++;
     // beep boop
     char inst[STRING_LENGTH], arg1[STRING_LENGTH], arg2[STRING_LENGTH];
-    sscanf(instructions[i], "%s %[^,], %s", inst, arg1, arg2);
+    // for some commands [] are inserted around the register. Get rid of these
+    // so we can use a single scan funciton
+    char *instruction = instructions[i];
+    while ((*instruction = *instruction) == '[' || *instruction == ']') {
+      *instruction = ' '; /* turn brackets into spaces */
+    }
+    sscanf(instruction, "%s %[^,], %s", inst, arg1, arg2);
     // Now do heuristics
     if (strcmp(inst, "MOV") == 0) {
       int r1 = atoi(&arg1[1]);
       reg[r1] = atoi(arg2);
+      clockCycles++;
     } else if (strcmp(inst, "ADD") == 0) {
       // There are two types of add, check which one is present
       if (arg2[0] == 'R') {
@@ -48,6 +74,7 @@ int main(int argc, char *argv[]) {
         int r1 = atoi(&arg1[1]);
         reg[r1] += atoi(arg2);
       }
+      clockCycles++;
     } else if (strcmp(inst, "CMP") == 0) {
       int r1 = atoi(&arg1[1]);
       int r2 = atoi(&arg2[1]);
@@ -56,17 +83,55 @@ int main(int argc, char *argv[]) {
       } else {
         equal = 0;
       }
-
+      clockCycles++;
+    } else if (strcmp(inst, "JMP") == 0) {
+      // jump to that spot
+      int toJump = atoi(arg1);
+      // you gotta subtract one because it'll iterate on the next go
+      i = toJump - 1;
+      clockCycles++;
+    } else if (strcmp(inst, "JE") == 0 && equal) {
+      // jump to that spot
+      int toJump = atoi(arg1);
+      // you gotta subtract one because it'll iterate on the next go
+      i = toJump - 1;
+      clockCycles++;
+    } else if (strcmp(inst, "LD") == 0) {
+      // loads from the address stored in Rm into Rn
+      int rn = atoi(&arg1[1]);
+      int rm = atoi(&arg2[1]);
+      reg[rn] = memory[rm];
+      clockCycles += 2;
+      totalMemoryHits++;
+    } else if (strcmp(inst, "ST") == 0) {
+      // stores the contents of Rn into the memory address that is in Rm
+      int rm = atoi(&arg1[1]);
+      int rn = atoi(&arg2[1]);
+      memory[rm] = reg[rn];
+      // check if it has been touched before
+      if (touched[rm] == 0) {
+        touched[rm] = 1;
+        localMemoryHits++;
+        clockCycles += 50;
+      } else {
+        clockCycles += 2;
+      }
+      totalMemoryHits++;
     } else {
       printf("Unknown Instruction: %s\n", inst);
     }
   }
 
   // print regs:
-  for (i = 0; i < 6; i++) {
+  for (i = 1; i < 7; i++) {
     printf("R%d: %d, ", i, reg[i]);
   }
   printf("\n");
+
+  printf("Total number of executed instructions: %d\nTotal number of clock "
+         "cycles: %d\nNumber of hits to local memory: %d\nTotal number of "
+         "executed LD/ST instructions: %d\n",
+         executedInstruction, clockCycles, localMemoryHits, totalMemoryHits);
 
   // clean up
   fclose(file);
