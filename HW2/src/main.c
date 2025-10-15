@@ -1,60 +1,100 @@
-#include "bits.h"
-#include "mylist.h"
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
+#define STRING_LENGTH 256
+
+char **getInstructionsFromFile(FILE *file, int *lineCount);
+
 int main(int argc, char *argv[]) {
-  // Create help message
-  if (argc != 3) {
-    printf("Error: Incorrect arguments provided.\nUsage: "
-           "MyBitApp <inputFile> <outputFile>\n"
-           "  - inputFile: Path to the input text file\n"
-           "  - outputFile: Path to the output text file\n");
-    return 0;
-  }
-  // Set up the files
-  FILE *inFile = fopen(argv[1], "r");
-  if (inFile == NULL) {
-    printf("Error: Failed to open inFile: %s\n", argv[1]);
+  if (argc < 2)
     return 1;
-  }
-  FILE *outFile = fopen(argv[2], "w");
-  if (outFile == NULL) {
-    printf("Error: Failed to open outFile: %s\n", argv[2]);
-    return 1;
-  }
-  // There are only 14 ints, were just going to assume it's less than 100
-  int integers[100];
 
-  // Loop through and grab the values
+  FILE *file = fopen(argv[1], "r");
   int i = 0;
-  int num;
-  while (fscanf(inFile, "%d", &num) > 0) {
-    integers[i] = num;
-    i++;
+  int lineCount = 0;
+  if (!file)
+    return 1;
+
+  // get those instructions
+  char **instructions = getInstructionsFromFile(file, &lineCount);
+
+  // set up registers
+  int reg[6];
+  for (i = 0; i < 6; i++) {
+    reg[i] = 0;
   }
-  fclose(inFile);
+  // set up flags
+  int equal = 0;
 
-  // We now know how long it is so assign two lists to handle the new vals
-  int lengthOfInput = i;
-  MyList *head = NULL;
+  // Now move through instructions
+  for (i = 0; i < lineCount; i++) {
+    printf("Running Instruction: %d: %s\n", i, instructions[i]);
+    // beep boop
+    char inst[STRING_LENGTH], arg1[STRING_LENGTH], arg2[STRING_LENGTH];
+    sscanf(instructions[i], "%s %[^,], %s", inst, arg1, arg2);
+    // Now do heuristics
+    if (strcmp(inst, "MOV") == 0) {
+      int r1 = atoi(&arg1[1]);
+      reg[r1] = atoi(arg2);
+    } else if (strcmp(inst, "ADD") == 0) {
+      // There are two types of add, check which one is present
+      if (arg2[0] == 'R') {
+        // This one is a between register add
+        int r1 = atoi(&arg1[1]);
+        int r2 = atoi(&arg2[1]);
+        reg[r1] = reg[r1] + reg[r2];
+      } else {
+        // This one is a add to register
+        int r1 = atoi(&arg1[1]);
+        reg[r1] += atoi(arg2);
+      }
+    } else if (strcmp(inst, "CMP") == 0) {
+      int r1 = atoi(&arg1[1]);
+      int r2 = atoi(&arg2[1]);
+      if (reg[r1] == reg[r2]) {
+        equal = 1;
+      } else {
+        equal = 0;
+      }
 
-  for (int i = 0; i < lengthOfInput; i++) {
-    unsigned int mirror = BinaryMirror(integers[i]);
-    int counted = CountSequence(integers[i]);
-    char *binary = UIntToBinary(integers[i]);
-    char *ascii = UIntToAscii(mirror);
-    MyList *node =
-        create_MyList_node(integers[i], mirror, counted, binary, ascii, NULL);
-    head = insert_MyList_sorted(head, node);
+    } else {
+      printf("Unknown Instruction: %s\n", inst);
+    }
   }
 
-  // write out those values
-  MyList *current = head;
-  while (current != NULL) {
-    fprintf(outFile, "%u    %u\n", current->mirror, current->counted);
-    current = current->next;
+  // print regs:
+  for (i = 0; i < 6; i++) {
+    printf("R%d: %d, ", i, reg[i]);
   }
+  printf("\n");
 
-  fclose(outFile);
+  // clean up
+  fclose(file);
+  for (int i = 0; i < lineCount; i++) {
+    free(instructions[i]);
+  }
+  free(instructions);
   return 0;
+}
+
+char **getInstructionsFromFile(FILE *file, int *lineCount) {
+  int i = 0;
+  // read how many lines there are
+  char buffer[STRING_LENGTH];
+  while (fgets(buffer, sizeof(buffer), file)) {
+    (*lineCount)++;
+  }
+  rewind(file);
+
+  // then create an array and populate it based on that file
+  char **instructions = malloc(*lineCount * sizeof(char *));
+  for (i = 0; i < *lineCount; i++) {
+    instructions[i] = malloc(STRING_LENGTH);
+    if (!fgets(instructions[i], STRING_LENGTH, file)) {
+      free(instructions[i]);
+      break;
+    }
+    instructions[i][strcspn(instructions[i], "\n")] = '\0';
+  }
+  return instructions;
 }
