@@ -14,5 +14,11 @@ build:  $(SRCS)
 	mkdir -p $(BUILD_DIR)
 	gcc -std=c11 -Wall -Wextra -O2 $(SRCS) -o $(TARGET)
 
+profile: $(SRCS)
+	mkdir -p $(BUILD_DIR)
+	gcc -std=c11 -pg -Wall -Wextra $(SRCS) -o $(TARGET).profile
+	./$(TARGET).profile ./test.assembly
+	gprof -p $(TARGET).profile gmon.out
+
 clean:
 	rm -rf ${BUILD_DIR}
