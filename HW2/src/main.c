@@ -5,7 +5,27 @@
 #include <string.h>
 #define STRING_LENGTH 256
 
-char **getInstructionsFromFile(FILE *file, int *lineCount, int *firstLine);
+// Instructions:
+// 0: MOV Rn, <num>
+// 1: ADD Rn, Rm
+// 2: ADD Rn, <num>
+// 3: CMP Rn, Rm
+// 4: JE  <addr>
+// 5: JMP <addr>
+// 6: LD  Rn, [Rm]
+// 7: ST  [Rm], Rn
+// 8: Invalid Instruction
+typedef struct {
+  uint8_t instruction;
+  int arg1;
+  int arg2;
+} Instruction;
+static const char *mnemonic[] = {"MOV", "ADD", "ADD", "CMP",
+                                 "JE",  "JMP", "LD",  "ST"};
+
+void printInstruction(const Instruction *inst);
+Instruction *getInstructionsFromFile(FILE *file, int *lineCount,
+                                     int *firstLine);
 size_t compareInstructions(char *str1, char *str2);
 int toInt(char *str);
 
@@ -22,10 +42,11 @@ int main(int argc, char *argv[]) {
     return 1;
 
   // get those instructions
-  char **instructions = getInstructionsFromFile(file, &lineCount, &firstLine);
+  Instruction *instructions =
+      getInstructionsFromFile(file, &lineCount, &firstLine);
 
   // set up registers
-  size_t reg[7];
+  int reg[7];
   for (i = 1; i < 7; i++) {
     reg[i] = 0;
   }
@@ -52,71 +73,64 @@ int main(int argc, char *argv[]) {
   // Now move through instructions
   for (i = firstLine; i < lineCount + firstLine; i++) {
     executedInstruction++;
-    // beep boop
-    char inst[STRING_LENGTH], arg1[STRING_LENGTH], arg2[STRING_LENGTH];
-    int line; // ignored line
-    // printf("%s\n", instructions[i]);
-    sscanf(instructions[i], "%d %s %[^,], %s", &line, inst, arg1, arg2);
+    Instruction inst = instructions[i];
+    // printf("%d: , instruction: %d ", i, inst.instruction);
+    // printInstruction(&inst);
     // Now do heuristics
-    if (compareInstructions(inst, "MOV")) {
-      int r1 = atoi(&arg1[1]);
-      reg[r1] = atoi(arg2);
+    // 0: MOV Rn, <num>
+    if (inst.instruction == 0) {
+      reg[inst.arg1] = inst.arg2;
       clockCycles++;
-    } else if (compareInstructions(inst, "ADD")) {
-      // There are two types of add, check which one is present
-      if (arg2[0] == 'R') {
-        // This one is a between register add
-        int r1 = atoi(&arg1[1]);
-        int r2 = atoi(&arg2[1]);
-        reg[r1] = reg[r1] + reg[r2];
-      } else {
-        // This one is a add to register
-        int r1 = atoi(&arg1[1]);
-        reg[r1] += atoi(arg2);
-      }
+      // 1: ADD Rn, Rm
+    } else if (inst.instruction == 1) {
+      reg[inst.arg1] = reg[inst.arg1] + reg[inst.arg2];
       clockCycles++;
-    } else if (compareInstructions(inst, "CMP")) {
-      int r1 = atoi(&arg1[1]);
-      int r2 = atoi(&arg2[1]);
-      if (reg[r1] == reg[r2]) {
+      // 2: ADD Rn, <num>
+    } else if (inst.instruction == 2) {
+      reg[inst.arg1] += inst.arg2;
+      // printf("adding %d to %d\n", inst.arg2, reg[inst.arg1]);
+      clockCycles++;
+      // 3: CMP Rn, Rm
+    } else if (inst.instruction == 3) {
+      if (reg[inst.arg1] == reg[inst.arg2]) {
         equal = 1;
       } else {
         equal = 0;
       }
       clockCycles++;
-    } else if (compareInstructions(inst, "JMP")) {
-      // jump to that spot
-      int toJump = atoi(arg1);
-      // you gotta subtract one because it'll iterate on the next go
-      i = toJump - 1;
-      clockCycles++;
-    } else if (compareInstructions(inst, "JE")) {
+      // 4: JE  <addr>
+    } else if (inst.instruction == 4) {
       if (equal) {
         // jump to that spot
-        int toJump = atoi(arg1);
+        int toJump = inst.arg1;
         // you gotta subtract one because it'll iterate on the next go
         i = toJump - 1;
       }
       clockCycles++;
-    } else if (compareInstructions(inst, "LD")) {
+      // 5: JMP <addr>
+    } else if (inst.instruction == 5) {
+      // jump to that spot
+      int toJump = inst.arg1;
+      // you gotta subtract one because it'll iterate on the next go
+      i = toJump - 1;
+      clockCycles++;
+      // 6: LD  Rn, [Rm]
+    } else if (inst.instruction == 6) {
       // loads from the address stored in Rm into Rn
-      int rn = atoi(&arg1[1]);
-      int rm = atoi(&arg2[2]);
-      reg[rn] = memory[reg[rm]];
+      reg[inst.arg1] = memory[reg[inst.arg2]];
       clockCycles += 2;
       // the assumption is you HAVE to read from something that already exists
       // thus it is both a local memory & total memory hit
       localMemoryHits++;
       totalMemoryHits++;
-    } else if (compareInstructions(inst, "ST")) {
+      // 7: ST  [Rm], Rn
+    } else if (inst.instruction == 7) {
       // stores the contents of Rn into the memory address that is in Rm
-      int rm = atoi(&arg1[2]);
-      int rn = atoi(&arg2[1]);
       // printf("STORING TO: %d\n", reg[rm]);
-      memory[reg[rm]] = reg[rn];
+      memory[reg[inst.arg1]] = reg[inst.arg2];
       // check if it has been touched before
-      if (touched[reg[rm]] == 0) {
-        touched[reg[rm]] = 1;
+      if (touched[reg[inst.arg1]] == 0) {
+        touched[reg[inst.arg1]] = 1;
         clockCycles += 50;
       } else {
         localMemoryHits++;
@@ -124,7 +138,7 @@ int main(int argc, char *argv[]) {
       }
       totalMemoryHits++;
     } else {
-      printf("Unknown Instruction: %s\n", inst);
+      printf("Unknown Instruction: %d\n", inst.instruction);
     }
     // print regs:
     // for (j = 1; j < 7; j++) {
@@ -146,14 +160,12 @@ int main(int argc, char *argv[]) {
 
   // clean up
   fclose(file);
-  for (int i = firstLine; i < lineCount + firstLine; i++) {
-    free(instructions[i]);
-  }
   free(instructions);
   return 0;
 }
 
-char **getInstructionsFromFile(FILE *file, int *lineCount, int *firstLine) {
+Instruction *getInstructionsFromFile(FILE *file, int *lineCount,
+                                     int *firstLine) {
   int i = 0;
   // read how many lines there are
   char buffer[STRING_LENGTH];
@@ -169,14 +181,67 @@ char **getInstructionsFromFile(FILE *file, int *lineCount, int *firstLine) {
   rewind(file);
 
   // then create an array and populate it based on that file
-  char **instructions = malloc((*lineCount + *firstLine) * sizeof(char *));
+  Instruction *instructions =
+      malloc((*lineCount + *firstLine) * sizeof(Instruction));
   for (i = *firstLine; i < *lineCount + *firstLine; i++) {
-    instructions[i] = malloc(STRING_LENGTH);
-    if (!fgets(instructions[i], STRING_LENGTH, file)) {
-      free(instructions[i]);
-      break;
+    fgets(buffer, sizeof(buffer), file);
+    buffer[strcspn(buffer, "\n")] = '\0';
+    int dummyLine;
+    char inst[STRING_LENGTH], arg1[STRING_LENGTH], arg2[STRING_LENGTH];
+    sscanf(buffer, "%d %s %[^,], %s", &dummyLine, inst, arg1, arg2);
+    // convert the string instruction to a object that can be used later without
+    // having to use strcmp or atoi (which are slow)
+    // 0: MOV Rn, <num>
+    if (compareInstructions(inst, "MOV")) {
+      instructions[i].instruction = 0;
+      instructions[i].arg1 = toInt(&arg1[1]);
+      instructions[i].arg2 = toInt(arg2);
+      // 1-2: ADD
+    } else if (compareInstructions(inst, "ADD")) {
+      // There are two types of add, check which one is present
+      // 1: ADD Rn, Rm
+      if (arg2[0] == 'R') {
+        instructions[i].instruction = 1;
+        instructions[i].arg1 = toInt(&arg1[1]);
+        instructions[i].arg2 = toInt(&arg2[1]);
+        // 2: ADD Rn, <num>
+      } else {
+        instructions[i].instruction = 2;
+        instructions[i].arg1 = toInt(&arg1[1]);
+        instructions[i].arg2 = toInt(arg2);
+      }
+      // 3: CMP Rn, Rm
+    } else if (compareInstructions(inst, "CMP")) {
+      instructions[i].instruction = 3;
+      instructions[i].arg1 = toInt(&arg1[1]);
+      instructions[i].arg2 = toInt(&arg2[1]);
+      // 4: JE  <addr>
+    } else if (compareInstructions(inst, "JE")) {
+      // printf("line=%d  inst=%s  arg1=%s  arg2=%s\n", dummyLine, inst, arg1,
+      //        arg2);
+      instructions[i].instruction = 4;
+      instructions[i].arg1 = toInt(arg1);
+      // printf("instruction[%d] is now %d\n", i, instructions[i].instruction);
+      // 5: JMP <addr>
+    } else if (compareInstructions(inst, "JMP")) {
+      // printf("line=%d  inst=%s  arg1=%s  arg2=%s\n", dummyLine, inst, arg1,
+      //        arg2);
+      instructions[i].instruction = 5;
+      instructions[i].arg1 = toInt(arg1);
+      // printf("instruction[%d] is now %d\n", i, instructions[i].instruction);
+      // 6: LD  Rn, [Rm]
+    } else if (compareInstructions(inst, "LD")) {
+      instructions[i].instruction = 6;
+      instructions[i].arg1 = toInt(&arg1[1]);
+      instructions[i].arg2 = toInt(&arg2[2]);
+      // 7: ST  [Rm], Rn
+    } else if (compareInstructions(inst, "ST")) {
+      instructions[i].instruction = 7;
+      instructions[i].arg1 = toInt(&arg1[2]);
+      instructions[i].arg2 = toInt(&arg2[1]);
+    } else {
+      instructions[i].instruction = 8;
     }
-    instructions[i][strcspn(instructions[i], "\n")] = '\0';
   }
   return instructions;
 }
@@ -190,3 +255,37 @@ size_t compareInstructions(char *str1, char *str2) {
 }
 
 int toInt(char *str) { return atoi(str); }
+void printInstruction(const Instruction *inst) {
+  uint8_t op = inst->instruction;
+  if (op > 7) { /* catch the “Invalid Instruction” case */
+    printf("Invalid Instruction\n");
+    return;
+  }
+
+  switch (op) {
+  case 0: /* MOV Rn, imm */
+    printf("%s R%d, %d\n", mnemonic[op], inst->arg1, inst->arg2);
+    break;
+  case 1: /* ADD Rn, Rm */
+    printf("%s R%d, R%d\n", mnemonic[op], inst->arg1, inst->arg2);
+    break;
+  case 2: /* ADD Rn, imm */
+    printf("%s R%d, %d\n", mnemonic[op], inst->arg1, inst->arg2);
+    break;
+  case 3: /* CMP Rn, Rm */
+    printf("%s R%d, R%d\n", mnemonic[op], inst->arg1, inst->arg2);
+    break;
+  case 4: /* JE addr */
+    printf("%s %d\n", mnemonic[op], inst->arg1);
+    break;
+  case 5: /* JMP addr */
+    printf("%s %d\n", mnemonic[op], inst->arg1);
+    break;
+  case 6: /* LD Rn, [Rm] */
+    printf("%s R%d, [R%d]\n", mnemonic[op], inst->arg1, inst->arg2);
+    break;
+  case 7: /* ST [Rm], Rn */
+    printf("%s [R%d], R%d\n", mnemonic[op], inst->arg1, inst->arg2);
+    break;
+  }
+}

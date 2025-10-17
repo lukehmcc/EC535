@@ -14,6 +14,9 @@ build:  $(SRCS)
 	mkdir -p $(BUILD_DIR)
 	gcc -std=c11 -Wall -Wextra -O2 $(SRCS) -o $(TARGET)
 
+run: build
+	./$(TARGET) ./test.assembly
+
 profile: $(SRCS)
 	mkdir -p $(BUILD_DIR)
 	gcc -std=c11 -pg -Wall -Wextra $(SRCS) -o $(TARGET).profile
