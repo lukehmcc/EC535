@@ -9,19 +9,18 @@
 #include <linux/kernel.h>  /* printk() */
 #include <linux/module.h>
 #include <linux/proc_fs.h>
-#include <linux/seq_file.h> // signle_open
+#include <linux/sched/signal.h> // for sig sending
+#include <linux/seq_file.h>     // signle_open
 #include <linux/signal.h>
 #include <linux/slab.h>  /* kmalloc() */
 #include <linux/types.h> /* size_t */
 #include <linux/uaccess.h>
 #include <linux/vmalloc.h> // For vmalloc
-#include <linux/sched/signal.h> // for sig sending
 
 #define BUF_LEN 256
 #define MAX_PRINT_LENGTH PAGE_SIZE
 #define MAX_TIMERS 2 // one more than Necessary to handle overflow
 #define DEVICE_NAME "mytraffic"
-
 
 MODULE_LICENSE("Dual BSD/GPL");
 
@@ -36,7 +35,7 @@ static int mytimer_release(struct inode *inode, struct file *filp);
 static ssize_t mytimer_write(struct file *filp, const char *buf, size_t count,
                              loff_t *f_pos);
 static ssize_t mytimer_read(struct file *filep, char __user *buffer, size_t len,
-                              loff_t *offset);
+                            loff_t *offset);
 static int mytimer_init(void);
 static void mytimer_exit(void);
 static void timer_handler(struct timer_list *);
@@ -60,7 +59,7 @@ module_exit(mytimer_exit);
 
 // all the variables
 static int mytimer_major = 61; /* be sure to run mknod with this major num! */
-static char *list_pot; // Space for the proc output
+static char *list_pot;         // Space for the proc output
 static struct my_timer_holder my_timer;
 
 static int mytimer_init(void) {
@@ -71,8 +70,8 @@ static int mytimer_init(void) {
   /* Register Timer  */
   my_timer = kzalloc(sizeof(struct my_timer_holder), GFP_KERNEL);
   if (!my_timer) {
-      kfree(my_timer);
-      return -ENOMEM;
+    kfree(my_timer);
+    return -ENOMEM;
   }
   timer_setup(&my_timer->timer, timer_handler, 0);
 
@@ -102,29 +101,27 @@ static void mytimer_exit(void) {
   printk(KERN_INFO "mytimer: Module unloaded.\n");
 }
 
-static int mytimer_open(struct inode *inode, struct file *filp) {
-  return 0;
-}
+static int mytimer_open(struct inode *inode, struct file *filp) { return 0; }
 
 static int mytimer_release(struct inode *inode, struct file *filp) {
   mytimer_fasync(-1, filp, 0);
   return 0;
 }
 
-static ssize_t mytimer_read(struct file *filep, char __user *buffer, size_t len, loff_t *offset){
+static ssize_t mytimer_read(struct file *filep, char __user *buffer, size_t len,
+                            loff_t *offset) {
   char buf[512];
   int count = 0, i;
 
   if (*offset)
-      return 0;
+    return 0;
 
   if (my_timer && timer_pending(&my_timer->timer)) {
-      unsigned long left = my_timer->timer.expires - jiffies;
-      count += scnprintf(buf + count, sizeof(buf) - count,
-                        "Yo nerd\n");
+    unsigned long left = my_timer->timer.expires - jiffies;
+    count += scnprintf(buf + count, sizeof(buf) - count, "Yo nerd\n");
   }
   if (copy_to_user(buffer, buf, count))
-      return -EFAULT;
+    return -EFAULT;
 
   *offset = count;
   return count;
@@ -133,12 +130,12 @@ static ssize_t mytimer_read(struct file *filep, char __user *buffer, size_t len,
 static ssize_t mytimer_write(struct file *filp, const char *buf, size_t count,
                              loff_t *f_pos) {
   // do something on write
-  return sizeof(req);
+  return 0;
 }
 
 static int mytimer_fasync(int fd, struct file *filp, int mode) {
   struct my_timer_holder *holder = find_by_pid(current->pid);
-  if (holder){
+  if (holder) {
     return fasync_helper(fd, filp, mode, &holder->async_queue);
   }
   return -1;
@@ -146,6 +143,5 @@ static int mytimer_fasync(int fd, struct file *filp, int mode) {
 
 static void timer_handler(struct timer_list *t) {
   struct my_timer_holder *holder = from_timer(holder, t, timer);
-  // do something on timer 
+  // do something on timer
 }
-

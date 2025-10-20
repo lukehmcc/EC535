@@ -1,3 +1,5 @@
 mytimer.mod
 modules.order
 .mytraffic.*
+compile_commands.json
+.cache/
