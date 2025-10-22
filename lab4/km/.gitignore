@@ -3,3 +3,4 @@ modules.order
 .mytraffic.*
 compile_commands.json
 .cache/
+.clangd

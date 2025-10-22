@@ -46,7 +46,7 @@ int main(int argc, char *argv[]) {
       getInstructionsFromFile(file, &lineCount, &firstLine);
 
   // set up registers
-  int reg[7];
+  int8_t reg[7];
   for (i = 1; i < 7; i++) {
     reg[i] = 0;
   }
@@ -116,26 +116,28 @@ int main(int argc, char *argv[]) {
       clockCycles++;
       // 6: LD  Rn, [Rm]
     } else if (inst.instruction == 6) {
-      // loads from the address stored in Rm into Rn
-      reg[inst.arg1] = memory[reg[inst.arg2]];
-      clockCycles += 2;
-      // the assumption is you HAVE to read from something that already exists
-      // thus it is both a local memory & total memory hit
-      localMemoryHits++;
-      totalMemoryHits++;
-      // 7: ST  [Rm], Rn
-    } else if (inst.instruction == 7) {
-      // stores the contents of Rn into the memory address that is in Rm
-      // printf("STORING TO: %d\n", reg[rm]);
-      memory[reg[inst.arg1]] = reg[inst.arg2];
-      // check if it has been touched before
-      if (touched[reg[inst.arg1]] == 0) {
-        touched[reg[inst.arg1]] = 1;
+      uint8_t addr = reg[inst.arg2] & 0xFF;
+      if (!touched[addr]) { // first ever reference
+        touched[addr] = 1;
         clockCycles += 50;
-      } else {
+      } else { // local hit
         localMemoryHits++;
         clockCycles += 2;
       }
+      reg[inst.arg1] = memory[addr];
+      totalMemoryHits++;
+
+      // 7: ST  [Rm], Rn
+    } else if (inst.instruction == 7) {
+      uint8_t addr = reg[inst.arg1] & 0xFF;
+      if (!touched[addr]) { // first ever reference
+        touched[addr] = 1;
+        clockCycles += 50;
+      } else { // local hit
+        localMemoryHits++;
+        clockCycles += 2;
+      }
+      memory[addr] = reg[inst.arg2];
       totalMemoryHits++;
     } else {
       printf("Unknown Instruction: %d\n", inst.instruction);
@@ -143,6 +145,10 @@ int main(int argc, char *argv[]) {
     // print regs:
     // for (j = 1; j < 7; j++) {
     //   printf("R%d: %d, ", j, reg[j]);
+    // }
+    // printf("\n");
+    // for (j = 0; j < 256; j++) {
+    //   printf("M%d: %d, ", j, memory[j]);
     // }
     // printf("\n");
   }
