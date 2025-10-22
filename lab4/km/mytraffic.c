@@ -29,7 +29,6 @@ struct my_timer_holder {
   struct timer_list timer;
 };
 
-static int mytimer_fasync(int fd, struct file *filp, int mode);
 static int mytimer_open(struct inode *inode, struct file *filp);
 static int mytimer_release(struct inode *inode, struct file *filp);
 static ssize_t mytimer_write(struct file *filp, const char *buf, size_t count,
@@ -46,11 +45,10 @@ struct my_timer_holder *find_by_pid(pid_t pid);
  * (some are overlayed with bare scull)
  */
 struct file_operations mytimer_fops = {
-  write : mytimer_write,
-  read : mytimer_read,
-  open : mytimer_open,
-  release : mytimer_release,
-  fasync : mytimer_fasync
+    .write = mytimer_write,
+    .read = mytimer_read,
+    .open = mytimer_open,
+    .release = mytimer_release,
 };
 
 /* Declaration of the init and exit functions */
@@ -59,12 +57,11 @@ module_exit(mytimer_exit);
 
 // all the variables
 static int mytimer_major = 61; /* be sure to run mknod with this major num! */
-static char *list_pot;         // Space for the proc output
-static struct my_timer_holder my_timer;
+static struct my_timer_holder *my_timer;
 
 static int mytimer_init(void) {
   // First set up the timer
-  int result, i;
+  int result;
   int ret = 0;
 
   /* Register Timer  */
@@ -90,7 +87,6 @@ static int mytimer_init(void) {
 
 static void mytimer_exit(void) {
   /* Freeing the major number */
-  int i;
   unregister_chrdev(mytimer_major, "mytimer");
   kfree(my_timer);
   my_timer = NULL;
@@ -103,21 +99,17 @@ static void mytimer_exit(void) {
 
 static int mytimer_open(struct inode *inode, struct file *filp) { return 0; }
 
-static int mytimer_release(struct inode *inode, struct file *filp) {
-  mytimer_fasync(-1, filp, 0);
-  return 0;
-}
+static int mytimer_release(struct inode *inode, struct file *filp) { return 0; }
 
 static ssize_t mytimer_read(struct file *filep, char __user *buffer, size_t len,
                             loff_t *offset) {
-  char buf[512];
-  int count = 0, i;
+  char buf[512] = {0};
+  int count = 0;
 
   if (*offset)
     return 0;
 
   if (my_timer && timer_pending(&my_timer->timer)) {
-    unsigned long left = my_timer->timer.expires - jiffies;
     count += scnprintf(buf + count, sizeof(buf) - count, "Yo nerd\n");
   }
   if (copy_to_user(buffer, buf, count))
@@ -131,14 +123,6 @@ static ssize_t mytimer_write(struct file *filp, const char *buf, size_t count,
                              loff_t *f_pos) {
   // do something on write
   return 0;
-}
-
-static int mytimer_fasync(int fd, struct file *filp, int mode) {
-  struct my_timer_holder *holder = find_by_pid(current->pid);
-  if (holder) {
-    return fasync_helper(fd, filp, mode, &holder->async_queue);
-  }
-  return -1;
 }
 
 static void timer_handler(struct timer_list *t) {

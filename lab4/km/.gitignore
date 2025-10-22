@@ -4,3 +4,10 @@ modules.order
 compile_commands.json
 .cache/
 .clangd
+Module.symvers
+mytraffic.ko
+mytraffic.mod.*
+mytraffic.o
+.mytimer.mod.cmd
+.mytimer.o.d
+.tmp_versions
