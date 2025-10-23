@@ -27,6 +27,26 @@ cd km/
 make
 ```
 
+## Running the code 
+First run:
+```bash
+./reinject_and_run.sh
+```
+
+Then once in the machine you can run:
+```bash
+./go.sh
+```
+
+This will install the kernel module. Now that it is installed, you can 
+simlulate the button presses by echoing:
+```bash
+echo 0 > /dev/mytraffic # simulates btn0
+echo 1 > /dev/mytraffic # simulates btn1
+```
+
+> Note: These will be changed once the writeable character device is implmented
+
 ## Team
 
 Members: Roger Brown, Luke McCarthy, Jackson Clary

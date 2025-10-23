@@ -1,4 +1,6 @@
 /* Necessary includes for device drivers */
+#include "linux/kern_levels.h"
+#include "linux/timer.h"
 #include <asm/system_misc.h> /* cli(), *_flags */
 #include <asm/uaccess.h>     /* copy_from/to_user */
 #include <linux/errno.h>     /* error codes */
@@ -27,16 +29,17 @@ MODULE_LICENSE("Dual BSD/GPL");
 // define the timer holder struct
 struct my_timer_holder {
   struct timer_list timer;
+  int state;
 };
 
-static int mytimer_open(struct inode *inode, struct file *filp);
-static int mytimer_release(struct inode *inode, struct file *filp);
-static ssize_t mytimer_write(struct file *filp, const char *buf, size_t count,
-                             loff_t *f_pos);
-static ssize_t mytimer_read(struct file *filep, char __user *buffer, size_t len,
-                            loff_t *offset);
-static int mytimer_init(void);
-static void mytimer_exit(void);
+static int mytraffic_open(struct inode *inode, struct file *filp);
+static int mytraffic_release(struct inode *inode, struct file *filp);
+static ssize_t mytraffic_write(struct file *filp, const char *buf, size_t count,
+                               loff_t *f_pos);
+static ssize_t mytraffic_read(struct file *filep, char __user *buffer,
+                              size_t len, loff_t *offset);
+static int mytraffic_init(void);
+static void mytraffic_exit(void);
 static void timer_handler(struct timer_list *);
 struct my_timer_holder *find_by_pid(pid_t pid);
 
@@ -44,22 +47,25 @@ struct my_timer_holder *find_by_pid(pid_t pid);
  * The file operations for the pipe device
  * (some are overlayed with bare scull)
  */
-struct file_operations mytimer_fops = {
-    .write = mytimer_write,
-    .read = mytimer_read,
-    .open = mytimer_open,
-    .release = mytimer_release,
+struct file_operations mytraffic_fops = {
+    .write = mytraffic_write,
+    .read = mytraffic_read,
+    .open = mytraffic_open,
+    .release = mytraffic_release,
 };
 
 /* Declaration of the init and exit functions */
-module_init(mytimer_init);
-module_exit(mytimer_exit);
+module_init(mytraffic_init);
+module_exit(mytraffic_exit);
 
 // all the variables
-static int mytimer_major = 61; /* be sure to run mknod with this major num! */
+static int mytraffic_major = 61; /* be sure to run mknod with this major num! */
 static struct my_timer_holder *my_timer;
+int currentFrequency = 1; // defaults to a 1x multiplyer
+int currentState = 0;
+int lights[3] = {0, 0, 0};
 
-static int mytimer_init(void) {
+static int mytraffic_init(void) {
   // First set up the timer
   int result;
   int ret = 0;
@@ -70,48 +76,70 @@ static int mytimer_init(void) {
     kfree(my_timer);
     return -ENOMEM;
   }
-  timer_setup(&my_timer->timer, timer_handler, 0);
 
-  printk("mytimer loaded.\n");
+  // set state to default blinking pattern
+  // -1 is a hack because you +1 at the start of each loops so I want the first
+  // thing to run to be 0, not 1
+  my_timer->state = -1;
+  // then set up timer and run it at the current frequency
+  timer_setup(&my_timer->timer, timer_handler, 0);
+  mod_timer(&my_timer->timer,
+            jiffies +
+                msecs_to_jiffies(currentFrequency * 10)); // immediately start
+
+  printk("mytraffic loaded.\n");
 
   /* Registering device */
-  result = register_chrdev(mytimer_major, "mytimer", &mytimer_fops);
+  result = register_chrdev(mytraffic_major, "mytraffic", &mytraffic_fops);
   if (result < 0) {
-    printk(KERN_ALERT "mytimer: cannot obtain major number %d\n",
-           mytimer_major);
+    printk(KERN_ALERT "mytraffic: cannot obtain major number %d\n",
+           mytraffic_major);
     return result;
   }
 
   return ret;
 }
 
-static void mytimer_exit(void) {
+static void mytraffic_exit(void) {
   /* Freeing the major number */
-  unregister_chrdev(mytimer_major, "mytimer");
-  kfree(my_timer);
-  my_timer = NULL;
-  printk(KERN_ALERT "Removing mytimer module\n");
-
-  // free proc file
-  remove_proc_entry("mytimer", NULL);
-  printk(KERN_INFO "mytimer: Module unloaded.\n");
+  if (my_timer) {
+    del_timer_sync(&my_timer->timer);
+    kfree(my_timer);
+    my_timer = NULL;
+  }
+  unregister_chrdev(mytraffic_major, "mytraffic");
+  printk(KERN_ALERT "Removing mytraffic module\n");
 }
 
-static int mytimer_open(struct inode *inode, struct file *filp) { return 0; }
+static int mytraffic_open(struct inode *inode, struct file *filp) { return 0; }
 
-static int mytimer_release(struct inode *inode, struct file *filp) { return 0; }
+static int mytraffic_release(struct inode *inode, struct file *filp) {
+  return 0;
+}
 
-static ssize_t mytimer_read(struct file *filep, char __user *buffer, size_t len,
-                            loff_t *offset) {
+static ssize_t mytraffic_read(struct file *filep, char __user *buffer,
+                              size_t len, loff_t *offset) {
   char buf[512] = {0};
   int count = 0;
 
   if (*offset)
     return 0;
 
-  if (my_timer && timer_pending(&my_timer->timer)) {
-    count += scnprintf(buf + count, sizeof(buf) - count, "Yo nerd\n");
-  }
+  // print to buffer
+  count += scnprintf(buf + count, sizeof(buf) - count,
+                     "Current Frequency: %dHz\n", currentFrequency);
+
+  // TODO: Print which lights are active
+  count += scnprintf(buf + count, sizeof(buf) - count, "Green: %s\n",
+                     (lights[0] == 1) ? "On" : "Off");
+  count += scnprintf(buf + count, sizeof(buf) - count, "Yellow: %s\n",
+                     (lights[1] == 1) ? "On" : "Off");
+  count += scnprintf(buf + count, sizeof(buf) - count, "Red: %s\n",
+                     (lights[2] == 1) ? "On" : "Off");
+
+  count +=
+      scnprintf(buf + count, sizeof(buf) - count, "Pedestrian Present: N/A\n");
+  // then sent that to the user
   if (copy_to_user(buffer, buf, count))
     return -EFAULT;
 
@@ -119,13 +147,100 @@ static ssize_t mytimer_read(struct file *filep, char __user *buffer, size_t len,
   return count;
 }
 
-static ssize_t mytimer_write(struct file *filp, const char *buf, size_t count,
-                             loff_t *f_pos) {
+static ssize_t mytraffic_write(struct file *filp, const char *buf, size_t count,
+                               loff_t *f_pos) {
   // do something on write
-  return 0;
+  char kbuf[BUF_LEN];
+  int value;
+  int rc;
+
+  // leave room for \0
+  if (count >= BUF_LEN)
+    count = BUF_LEN - 1;
+
+  if (copy_from_user(kbuf, buf, count))
+    return -EFAULT;
+
+  // add null termination
+  kbuf[count] = '\0';
+  rc = kstrtoint(kbuf, 10, &value); // convert ot int
+  // if not zero something is wrong
+  if (rc)
+    return -EINVAL;
+
+  // now process that
+  // TODO: Handler is here to do btn1 & ped call
+  if (value == 0) {
+    currentState = ((currentState + 1) % 3); // wrap around 0, 1, 2
+    del_timer(&my_timer->timer);
+    mod_timer(&my_timer->timer,
+              jiffies +
+                  msecs_to_jiffies(currentFrequency * 10)); // immediately fire
+    printk(KERN_ALERT "State is now %d\n", currentState);
+  } else if (value == 1) {
+    printk(KERN_ALERT "Button 1 pressed\n");
+  } else {
+    printk(KERN_ALERT "Value is not supported\n");
+  }
+  return count;
 }
 
 static void timer_handler(struct timer_list *t) {
-  struct my_timer_holder *holder = from_timer(holder, t, timer);
-  // do something on timer
+  // TODO: On each timer: jump the interal counter depending on state
+
+  // Normal: 3 green, 1 yellow, 2 red
+  if (currentState == 0) {
+    my_timer->state = (my_timer->state + 1) % 6;
+    if (my_timer->state == 0 || my_timer->state == 1 || my_timer->state == 2) {
+      lights[0] = 1;
+      lights[1] = 0;
+      lights[2] = 0;
+      printk(KERN_ALERT "GREEN");
+    } else if (my_timer->state == 3) {
+      lights[0] = 0;
+      lights[1] = 1;
+      lights[2] = 0;
+      printk(KERN_ALERT "YELLOW");
+    } else if (my_timer->state == 4 || my_timer->state == 5) {
+      lights[0] = 0;
+      lights[1] = 0;
+      lights[2] = 1;
+      printk(KERN_ALERT "RED");
+    }
+    // Flashing Red: 1 red, 1 off
+  } else if (currentState == 1) {
+    my_timer->state = (my_timer->state + 1) % 2;
+    if (my_timer->state == 0) {
+      lights[0] = 0;
+      lights[1] = 0;
+      lights[2] = 1;
+      printk(KERN_ALERT "RED");
+    } else if (my_timer->state == 1) {
+      lights[0] = 0;
+      lights[1] = 0;
+      lights[2] = 0;
+      printk(KERN_ALERT "OFF");
+    }
+    // Flashing Yellow: 1 yellow, 1 off
+  } else if (currentState == 2) {
+    my_timer->state = (my_timer->state + 1) % 2;
+    if (my_timer->state == 0) {
+      lights[0] = 0;
+      lights[1] = 1;
+      lights[2] = 0;
+      printk(KERN_ALERT "YELLOW");
+    } else if (my_timer->state == 1) {
+      lights[0] = 0;
+      lights[1] = 0;
+      lights[2] = 0;
+      printk(KERN_ALERT "OFF");
+    }
+  } else {
+    // undefined state, panic back to 0
+    printk(KERN_ALERT "Undefined state... uh oh\n");
+    currentState = 0;
+  }
+  // now trigger the next timer to deal with later
+  mod_timer(&my_timer->timer,
+            jiffies + msecs_to_jiffies(currentFrequency * 1000));
 }
