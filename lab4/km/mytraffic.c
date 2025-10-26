@@ -19,6 +19,14 @@
 #include <linux/uaccess.h>
 #include <linux/vmalloc.h> // For vmalloc
 
+#include <linux/gpio.h> // for GPIO control
+
+#define GPIO_RED 67     // Red LED
+#define GPIO_YELLOW 68  // Yellow LED
+#define GPIO_GREEN 44   // Green LED
+#define GPIO_BTN0 26    // Button 0
+#define GPIO_BTN1 46    // Button 1
+
 #define BUF_LEN 256
 #define MAX_PRINT_LENGTH PAGE_SIZE
 #define MAX_TIMERS 2 // one more than Necessary to handle overflow
@@ -87,6 +95,48 @@ static int mytraffic_init(void) {
             jiffies +
                 msecs_to_jiffies(currentFrequency * 10)); // immediately start
 
+  // configure GPIO pins
+  result = gpio_request(GPIO_GREEN, "traffic_green");
+  if (result) {
+    printk(KERN_ALERT "Failed to request GPIO %d\n", GPIO_GREEN);
+    // goto err_gpio;
+    return result;
+  }
+  gpio_direction_output(GPIO_GREEN, 0);
+
+  result = gpio_request(GPIO_YELLOW, "traffic_yellow");
+  if (result) {
+    printk(KERN_ALERT "Failed to request GPIO %d\n", GPIO_YELLOW);
+    // goto err_gpio;
+    return result;
+  }
+  gpio_direction_output(GPIO_YELLOW, 0);
+
+  result = gpio_request(GPIO_RED, "traffic_red");
+  if (result) {
+    printk(KERN_ALERT "Failed to request GPIO %d\n", GPIO_RED);
+    // goto err_gpio;
+    return result;
+  }
+  gpio_direction_output(GPIO_RED, 0);
+
+  result = gpio_request(GPIO_BTN0, "traffic_btn0");
+  if (result) {
+    printk(KERN_ALERT "Failed to request GPIO %d\n", GPIO_BTN0);
+    // goto err_gpio;
+    return result;
+  }
+  gpio_direction_input(GPIO_BTN0);
+
+  result = gpio_request(GPIO_BTN1, "traffic_btn1");
+  if (result) {
+    printk(KERN_ALERT "Failed to request GPIO %d\n", GPIO_BTN1);
+    // goto err_gpio;
+    return result;
+  }
+  gpio_direction_input(GPIO_BTN1);
+
+
   printk("mytraffic loaded.\n");
 
   /* Registering device */
@@ -107,6 +157,13 @@ static void mytraffic_exit(void) {
     kfree(my_timer);
     my_timer = NULL;
   }
+
+  gpio_free(GPIO_RED);
+  gpio_free(GPIO_YELLOW);
+  gpio_free(GPIO_GREEN);
+  gpio_free(GPIO_BTN0);
+  gpio_free(GPIO_BTN1);
+
   unregister_chrdev(mytraffic_major, "mytraffic");
   printk(KERN_ALERT "Removing mytraffic module\n");
 }
@@ -195,16 +252,26 @@ static void timer_handler(struct timer_list *t) {
       lights[0] = 1;
       lights[1] = 0;
       lights[2] = 0;
+      gpio_set_value(GPIO_GREEN, 1);
+      gpio_set_value(GPIO_YELLOW, 0);
+      gpio_set_value(GPIO_RED, 0);
+      printk(KERN_ALERT "GREEN");
       printk(KERN_ALERT "GREEN");
     } else if (my_timer->state == 3) {
       lights[0] = 0;
       lights[1] = 1;
       lights[2] = 0;
+      gpio_set_value(GPIO_GREEN, 0);
+      gpio_set_value(GPIO_YELLOW, 1);
+      gpio_set_value(GPIO_RED, 0);
       printk(KERN_ALERT "YELLOW");
     } else if (my_timer->state == 4 || my_timer->state == 5) {
       lights[0] = 0;
       lights[1] = 0;
       lights[2] = 1;
+      gpio_set_value(GPIO_GREEN, 0);
+      gpio_set_value(GPIO_YELLOW, 0);
+      gpio_set_value(GPIO_RED, 1);
       printk(KERN_ALERT "RED");
     }
     // Flashing Red: 1 red, 1 off
@@ -214,11 +281,17 @@ static void timer_handler(struct timer_list *t) {
       lights[0] = 0;
       lights[1] = 0;
       lights[2] = 1;
+      gpio_set_value(GPIO_GREEN, 0);
+      gpio_set_value(GPIO_YELLOW, 0);
+      gpio_set_value(GPIO_RED, 1);
       printk(KERN_ALERT "RED");
     } else if (my_timer->state == 1) {
       lights[0] = 0;
       lights[1] = 0;
       lights[2] = 0;
+      gpio_set_value(GPIO_GREEN, 0);
+      gpio_set_value(GPIO_YELLOW, 0);
+      gpio_set_value(GPIO_RED, 0);
       printk(KERN_ALERT "OFF");
     }
     // Flashing Yellow: 1 yellow, 1 off
@@ -228,15 +301,24 @@ static void timer_handler(struct timer_list *t) {
       lights[0] = 0;
       lights[1] = 1;
       lights[2] = 0;
+      gpio_set_value(GPIO_GREEN, 0);
+      gpio_set_value(GPIO_YELLOW, 1);
+      gpio_set_value(GPIO_RED, 0);
       printk(KERN_ALERT "YELLOW");
     } else if (my_timer->state == 1) {
       lights[0] = 0;
       lights[1] = 0;
       lights[2] = 0;
+      gpio_set_value(GPIO_GREEN, 0);
+      gpio_set_value(GPIO_YELLOW, 0);
+      gpio_set_value(GPIO_RED, 0);
       printk(KERN_ALERT "OFF");
     }
   } else {
     // undefined state, panic back to 0
+    gpio_set_value(GPIO_GREEN, 0);
+    gpio_set_value(GPIO_YELLOW, 0);
+    gpio_set_value(GPIO_RED, 0);
     printk(KERN_ALERT "Undefined state... uh oh\n");
     currentState = 0;
   }
