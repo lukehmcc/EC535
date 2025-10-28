@@ -81,22 +81,22 @@ static int irq_btn1 = 0;
 
 // interrupt handler for BTN0 (mode cycle)
 static irqreturn_t btn0_isr(int irq, void *dev_id) {
-  printk(KERN_ALERT "BUTTON0 TRIGGERED\n");
+  // printk(KERN_ALERT "BUTTON0 TRIGGERED\n");
   currentState = (currentState + 1) % 3;
   my_timer->state = -1; // reset timer state when changing modes
   mod_timer(&my_timer->timer, jiffies + msecs_to_jiffies(10));
-  printk(KERN_ALERT "BTN0 pressed, mode changed to %d\n", currentState);
+  // printk(KERN_ALERT "BTN0 pressed, mode changed to %d\n", currentState);
   return IRQ_HANDLED;
 }
 
 // interrupt handler for BTN1 (pedestrian button)
 static irqreturn_t btn1_isr(int irq, void *dev_id) {
-  printk(KERN_ALERT "BUTTON1 TRIGGERED\n");
+  // printk(KERN_ALERT "BUTTON1 TRIGGERED\n");
   if (currentState == 0) {
     pedestrian_requested = 1;
-    printk(KERN_ALERT "BTN1 pressed, pedestrian request registered\n");
+    // printk(KERN_ALERT "BTN1 pressed, pedestrian request registered\n");
   } else {
-    printk(KERN_ALERT "BTN1 pressed but ignored (not in normal mode, currentState = %d)\n", currentState);
+    // printk(KERN_ALERT "BTN1 pressed but ignored (not in normal mode, currentState = %d)\n", currentState);
   }
   return IRQ_HANDLED;
 }
@@ -281,9 +281,9 @@ static ssize_t mytraffic_write(struct file *filp, const char *buf, size_t count,
     mod_timer(&my_timer->timer,
               jiffies +
                   msecs_to_jiffies(currentFrequency * 10)); // immediately fire
-    printk(KERN_ALERT "State is now %d\n", currentState);
+    // printk(KERN_ALERT "State is now %d\n", currentState);
   } else if (value == 1) {
-    printk(KERN_ALERT "Button 1 pressed\n");
+    // printk(KERN_ALERT "Button 1 pressed\n");
   } else {
     printk(KERN_ALERT "Value is not supported\n");
   }
@@ -303,7 +303,7 @@ static void timer_handler(struct timer_list *t) {
       pedestrian_phase_active = 1;
       pedestrian_requested = 0;
       pedestrian_cycles = 0;
-      printk(KERN_ALERT "Pedestrian phase starting\n");
+      // printk(KERN_ALERT "Pedestrian phase starting\n");
     }
     
     if (pedestrian_phase_active && my_timer->state == 5) { // don't increment if in pedestrian phase
@@ -325,44 +325,44 @@ static void timer_handler(struct timer_list *t) {
       lights[0] = 1;
       lights[1] = 0;
       lights[2] = 0;
-      gpio_set_value(GPIO_GREEN, 1);
-      gpio_set_value(GPIO_YELLOW, 0);
-      gpio_set_value(GPIO_RED, 0);
-      printk(KERN_ALERT "GREEN");
+      gpio_set_value(GPIO_GREEN, lights[0]);
+      gpio_set_value(GPIO_YELLOW, lights[1]);
+      gpio_set_value(GPIO_RED, lights[2]);
+      // printk(KERN_ALERT "GREEN");
     } else if (my_timer->state == 3) { // yellow cycle
       lights[0] = 0;
       lights[1] = 1;
       lights[2] = 0;
-      gpio_set_value(GPIO_GREEN, 0);
-      gpio_set_value(GPIO_YELLOW, 1);
-      gpio_set_value(GPIO_RED, 0);
-      printk(KERN_ALERT "YELLOW");
+      gpio_set_value(GPIO_GREEN, lights[0]);
+      gpio_set_value(GPIO_YELLOW, lights[1]);
+      gpio_set_value(GPIO_RED, lights[2]);
+      // printk(KERN_ALERT "YELLOW");
     } else if (my_timer->state == 4) { // red cycle
       lights[0] = 0;
       lights[1] = 0;
       lights[2] = 1;
-      gpio_set_value(GPIO_GREEN, 0);
-      gpio_set_value(GPIO_YELLOW, 0);
-      gpio_set_value(GPIO_RED, 1);
-      printk(KERN_ALERT "RED");
+      gpio_set_value(GPIO_GREEN, lights[0]);
+      gpio_set_value(GPIO_YELLOW, lights[1]);
+      gpio_set_value(GPIO_RED, lights[2]);
+      // printk(KERN_ALERT "RED");
     } else if (my_timer->state == 5) { // pedestrian phase
       // in pedestrian phase show red & yellow, otherwise just red
       if (pedestrian_phase_active) {
         lights[0] = 0;
         lights[1] = 1;
         lights[2] = 1;
-        gpio_set_value(GPIO_GREEN, 0);
-        gpio_set_value(GPIO_YELLOW, 1);
-        gpio_set_value(GPIO_RED, 1);
-        printk(KERN_ALERT "RED+YELLOW");
+        gpio_set_value(GPIO_GREEN, lights[0]);
+        gpio_set_value(GPIO_YELLOW, lights[1]);
+        gpio_set_value(GPIO_RED, lights[2]);
+        // printk(KERN_ALERT "RED+YELLOW");
       } else {
         lights[0] = 0;
         lights[1] = 0;
         lights[2] = 1;
-        gpio_set_value(GPIO_GREEN, 0);
-        gpio_set_value(GPIO_YELLOW, 0);
-        gpio_set_value(GPIO_RED, 1);
-        printk(KERN_ALERT "RED");
+        gpio_set_value(GPIO_GREEN, lights[0]);
+        gpio_set_value(GPIO_YELLOW, lights[1]);
+        gpio_set_value(GPIO_RED, lights[2]);
+        // printk(KERN_ALERT "RED");
       }
     }
     // Flashing red: 1 red, 1 off
@@ -372,18 +372,18 @@ static void timer_handler(struct timer_list *t) {
       lights[0] = 0;
       lights[1] = 0;
       lights[2] = 1;
-      gpio_set_value(GPIO_GREEN, 0);
-      gpio_set_value(GPIO_YELLOW, 0);
-      gpio_set_value(GPIO_RED, 1);
-      printk(KERN_ALERT "RED");
+      gpio_set_value(GPIO_GREEN, lights[0]);
+      gpio_set_value(GPIO_YELLOW, lights[1]);
+      gpio_set_value(GPIO_RED, lights[2]);
+      // printk(KERN_ALERT "RED");
     } else if (my_timer->state == 1) {
       lights[0] = 0;
       lights[1] = 0;
       lights[2] = 0;
-      gpio_set_value(GPIO_GREEN, 0);
-      gpio_set_value(GPIO_YELLOW, 0);
-      gpio_set_value(GPIO_RED, 0);
-      printk(KERN_ALERT "OFF");
+      gpio_set_value(GPIO_GREEN, lights[0]);
+      gpio_set_value(GPIO_YELLOW, lights[1]);
+      gpio_set_value(GPIO_RED, lights[2]);
+      // printk(KERN_ALERT "OFF");
     }
     // Flashing Yellow: 1 yellow, 1 off
   } else if (currentState == 2) {
@@ -392,25 +392,28 @@ static void timer_handler(struct timer_list *t) {
       lights[0] = 0;
       lights[1] = 1;
       lights[2] = 0;
-      gpio_set_value(GPIO_GREEN, 0);
-      gpio_set_value(GPIO_YELLOW, 1);
-      gpio_set_value(GPIO_RED, 0);
-      printk(KERN_ALERT "YELLOW");
+      gpio_set_value(GPIO_GREEN, lights[0]);
+      gpio_set_value(GPIO_YELLOW, lights[1]);
+      gpio_set_value(GPIO_RED, lights[2]);
+      // printk(KERN_ALERT "YELLOW");
     } else if (my_timer->state == 1) {
       lights[0] = 0;
       lights[1] = 0;
       lights[2] = 0;
-      gpio_set_value(GPIO_GREEN, 0);
-      gpio_set_value(GPIO_YELLOW, 0);
-      gpio_set_value(GPIO_RED, 0);
-      printk(KERN_ALERT "OFF");
+      gpio_set_value(GPIO_GREEN, lights[0]);
+      gpio_set_value(GPIO_YELLOW, lights[1]);
+      gpio_set_value(GPIO_RED, lights[2]);
+      // printk(KERN_ALERT "OFF");
     }
   } else {
     // undefined state, panic back to 0
-    gpio_set_value(GPIO_GREEN, 0);
-    gpio_set_value(GPIO_YELLOW, 0);
-    gpio_set_value(GPIO_RED, 0);
-    printk(KERN_ALERT "Undefined state... uh oh\n");
+    lights[0] = 0;
+    lights[1] = 0;
+    lights[2] = 0;
+    gpio_set_value(GPIO_GREEN, lights[0]);
+    gpio_set_value(GPIO_YELLOW, lights[1]);
+    gpio_set_value(GPIO_RED, lights[2]);
+    // printk(KERN_ALERT "Undefined state... uh oh\n");
     currentState = 0;
   }
   // now trigger the next timer to deal with later
