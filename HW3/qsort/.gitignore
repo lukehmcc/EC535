@@ -1,0 +1,5 @@
+COMPILE
+*.txt
+qsort_large
+qsort_small
+gmon.out
