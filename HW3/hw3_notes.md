@@ -90,6 +90,7 @@ Let's make a list of the compiler flags
 - -O3: 1.59s
 - -Ofast: 1.62s
 - -static: 2.10s
+- -static-libgcc: 1.97s
 - -march=native: 2.25s
 - -funroll-loops: 2.00s
 - -ffast-math: 2.00s
@@ -100,13 +101,61 @@ Without -pg `-static -g -Ofast -march=native -ffast-math`: 1.56s
 Compiler flags really aren't going to make this any faster. Like marginally maybe,
 but not by much.
 
-### 5 - My two speed ups
+### 5 - My speed ups
 
-#### Speed up 1
+#### Compiler Speed Up
 
-Compiler flags. Going from the default command is about 1.61s, then with the flags
-it brings it down to 1.56s.
+Compiler flags. Going from the default (-O) command is about 1.61s, then with the
+flags it brings it down to 1.56s.
 
-#### Speed up 2
+#### Code Speed Up
 
-Gotta fix the code or some shit.
+There are actually multiple in code changes:
+
+1. Distance is now stored in an int and the square root is not computed.
+Computing the square root isn't really necessary because all it checks is > <
+or ==, all things that don't rely on exact numbers, just magnitude. This
+doesn't have a particularly large runtime effect due to the majority of
+computation happening in the compare function, but it does exist.
+
+2. Instead of a ternary operator (which does a jump), the compare function now
+does just two comparisons and subtracts to return a ternary output `{-1,0,1]`.
+This reduces jumps and speeds things up. The compiler actually works around
+this normally so it only effects it when compiler optimizations aren't enabled.
+
+3. Instead of printing out every line of output to `stdout`, buffer in 1MB
+chunks and then dump them all at once. This has the biggest savings of what
+I've worked on so far.
+
+-------------------------------------------------------------------
+
+Profiling Results
+
+-------------------------------------------------------------------
+
+qsort_large spends #percent% of its time executing the function #function based
+on the flat profile.
+
+-------------------------------------------------------------------
+
+Optimization
+
+-------------------------------------------------------------------
+
++-----------------------+--------------------+--------------------+
+|Optimizations          |Time on eng-grid    |Time on BeagleBone  |
++-----------------------+--------------------+--------------------+
+|Default                | 1m1.111s           | 1m1.111s           |
++-----------------------+--------------------+--------------------+
+|myOptimization1        | 1m1.111s           |                    |
++-----------------------+--------------------+--------------------+
+|myOptimization2        | 1m1.111s           | 1m1.111s           |
++-----------------------+--------------------+--------------------+
+|Optional 1 & 2 combined| 1m1.111s           |                    |
++-----------------------+--------------------+--------------------+
+
+myOptimization1: My best optimization method explained at most in 250 characters.
+
+myOptimization2: My second best optimization method explained at most in 250 characters.
+
+Difference btw grid and embedded: Comments on timing differences at most in 250 characters.
