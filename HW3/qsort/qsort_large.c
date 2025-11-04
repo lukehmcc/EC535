@@ -63,27 +63,26 @@ int main(int argc, char *argv[]) {
   printf("\nSorting %d vectors based on distance from the origin.\n\n", count);
   qsort(array, count, sizeof(struct my3DVertexStruct), compare);
 
-  // for (i = 0; i < count; i++)
-  // printf("%d %d %d\n", array[i].x, array[i].y, array[i].z);
+  for (i = 0; i < count; i++)
+    printf("%d %d %d\n", array[i].x, array[i].y, array[i].z);
 
-  // lukehmcc The biggest optimization. Buffer the output before printing
-  // it
-  // to reduce write times.
-  char buf[BUFSZ];
-  size_t used = 0;
-
-  for (size_t i = 0; i < count; ++i) {
-    int n = snprintf(buf + used, BUFSZ - used, "%d %d %d\n", array[i].x,
-                     array[i].y, array[i].z);
-    if ((size_t)n >= BUFSZ - used) { /* would overflow */
-      fwrite(buf, 1, used, stdout);  /* flush */
-      used = 0;                      /* reset */
-      n = snprintf(buf, BUFSZ, "%d %d %d\n", array[i].x, array[i].y,
-                   array[i].z);
-    }
-    used += n;
-  }
-  fwrite(buf, 1, used, stdout); /* final flush */
+  // // lukehmcc The biggest optimization. Buffer the output before printing
+  // // it to reduce write times.
+  // char buf[BUFSZ];
+  // size_t used = 0;
+  //
+  // for (size_t i = 0; i < count; ++i) {
+  //   int n = snprintf(buf + used, BUFSZ - used, "%d %d %d\n", array[i].x,
+  //                    array[i].y, array[i].z);
+  //   if ((size_t)n >= BUFSZ - used) { /* would overflow */
+  //     fwrite(buf, 1, used, stdout);  /* flush */
+  //     used = 0;                      /* reset */
+  //     n = snprintf(buf, BUFSZ, "%d %d %d\n", array[i].x, array[i].y,
+  //                  array[i].z);
+  //   }
+  //   used += n;
+  // }
+  // fwrite(buf, 1, used, stdout); /* final flush */
   // }
   return 0;
 }
