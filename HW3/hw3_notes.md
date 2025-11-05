@@ -145,14 +145,16 @@ Optimization
 +-----------------------+--------------------+--------------------+
 |Optimizations          |Time on eng-grid    |Time on BeagleBone  |
 +-----------------------+--------------------+--------------------+
-|Default                | 0m3.523s           | 1m1.111s           |
+|Default                | 0m3.523s           | 0m 0.71s           |
 +-----------------------+--------------------+--------------------+
-|myOptimization1        | 0m3.317s           |                    |
+|myOptimization1        | 0m3.317s           | 0m 0.67s           |
 +-----------------------+--------------------+--------------------+
-|myOptimization2        | 0m3.469s           | 1m1.111s           |
+|myOptimization2        | 0m3.469s           | 0m 0.48s           |
 +-----------------------+--------------------+--------------------+
-|Optional 1 & 2 combined| 0m3.047s           |                    |
+|Optional 1 & 2 combined| 0m3.047s           |  0m 0.46s          |
 +-----------------------+--------------------+--------------------+
+
+> Note: The
 
 myOptimization1: My best optimization method explained at most in 250 characters.
 

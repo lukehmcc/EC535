@@ -20,8 +20,8 @@ qsort_large: qsort_large.c
 	gcc -static-libgcc $< -o $@ -lm
 
 qsort_arm: qsort_large.c
-	$(CROSS)gcc -static-libgcc -march=armv7 -Ofast -ffast-math $< -o qsort_large -lm
-	# $(CROSS)gcc -static-libgcc $< -o qsort_large -lm
+	# $(CROSS)gcc -static-libgcc -march=armv7 -Ofast -ffast-math $< -o qsort_large -lm
+	$(CROSS)gcc -static-libgcc $< -o qsort_large -lm
 
 clean:
 	rm -rf qsort_small qsort_large output*
