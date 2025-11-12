@@ -1,0 +1,8 @@
+COMPILE
+qsort_large
+qsort_small
+gmon.out
+bla.txt
+output_large.txt
+Module.symvers
+modules.order

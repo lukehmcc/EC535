@@ -1,4 +1,4 @@
-// #include <math.h>
+#include <math.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -10,10 +10,10 @@
 
 struct my3DVertexStruct {
   int x, y, z;
-  // double distance;
-  // lukehmcc: should not use double for distance as it is unnecesary to
-  // compute exact vector lengths
-  uint64_t distance;
+  double distance;
+  // // lukehmcc: should not use double for distance as it is unnecesary to
+  // // compute exact vector lengths
+  // uint64_t distance;
 };
 
 int compare(const void *elem1, const void *elem2) {
@@ -22,16 +22,16 @@ int compare(const void *elem1, const void *elem2) {
 
   double distance1, distance2;
 
-  // distance1 = (*((struct my3DVertexStruct *)elem1)).distance;
-  // distance2 = (*((struct my3DVertexStruct *)elem2)).distance;
-  // return (distance1 > distance2) ? 1 : ((distance1 == distance2) ? 0 : -1);
+  distance1 = (*((struct my3DVertexStruct *)elem1)).distance;
+  distance2 = (*((struct my3DVertexStruct *)elem2)).distance;
+  return (distance1 > distance2) ? 1 : ((distance1 == distance2) ? 0 : -1);
 
-  // lukehmcc: remove branch, just subtract.
-  const struct my3DVertexStruct *a = elem1;
-  const struct my3DVertexStruct *b = elem2;
-
-  // branch-free, overflow-safe, returns {-1,0,1}
-  return (a->distance > b->distance) - (a->distance < b->distance);
+  // // lukehmcc: remove branch, just subtract.
+  // const struct my3DVertexStruct *a = elem1;
+  // const struct my3DVertexStruct *b = elem2;
+  //
+  // // branch-free, overflow-safe, returns {-1,0,1}
+  // return (a->distance > b->distance) - (a->distance < b->distance);
 }
 
 int main(int argc, char *argv[]) {
@@ -53,10 +53,10 @@ int main(int argc, char *argv[]) {
       array[count].x = x;
       array[count].y = y;
       array[count].z = z;
-      // array[count].distance = sqrt(pow(x, 2) + pow(y, 2) + pow(z, 2));
-      // lukehmcc: part of the edit to the struct, don't need to sqrt every
-      // time and so they can be just an int
-      array[count].distance = x * x + y * y + z * z;
+      array[count].distance = sqrt(pow(x, 2) + pow(y, 2) + pow(z, 2));
+      // // lukehmcc: part of the edit to the struct, don't need to sqrt every
+      // // time and so they can be just an int
+      // array[count].distance = x * x + y * y + z * z;
       count++;
     }
   }

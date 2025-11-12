@@ -133,7 +133,7 @@ Profiling Results
 
 -------------------------------------------------------------------
 
-qsort_large spends #percent% of its time executing the function #function based
+qsort_large spends ~70% of its time executing the function compare() based
 on the flat profile.
 
 -------------------------------------------------------------------
@@ -147,17 +147,38 @@ Optimization
 +-----------------------+--------------------+--------------------+
 |Default                | 0m3.523s           | 0m 0.71s           |
 +-----------------------+--------------------+--------------------+
-|myOptimization1        | 0m3.317s           | 0m 0.67s           |
+|myOptimization1        | 0m3.317s           | 0m 0.48s           |
 +-----------------------+--------------------+--------------------+
-|myOptimization2        | 0m3.469s           | 0m 0.48s           |
+|myOptimization2        | 0m3.469s           | 0m 0.67s           |
 +-----------------------+--------------------+--------------------+
-|Optional 1 & 2 combined| 0m3.047s           |  0m 0.46s          |
+|Optional 1 & 2 combined| 0m3.047s           | 0m 0.46s           |
 +-----------------------+--------------------+--------------------+
 
-> Note: The
+> Note: The eng-grid results were run on a 100x loop to reduce the dramatic
+> inconsistencies that are present on those machines. It was run on a normal
+> loop on the Bone.
 
-myOptimization1: My best optimization method explained at most in 250 characters.
+myOptimization1: Compiler flags made the biggest difference in this exercise.
+The codebase is not that complicated, so letting the compiler do the big
+optimizations made the biggest difference. -Ofast made the biggest difference of
+all of the flags (though it was only a tiny improvement over -O). Also it seems
+that my code optimizations were significantly more potent when combined with
+compiler optimizations.
 
-myOptimization2: My second best optimization method explained at most in 250 characters.
+myOptimization2: Instead of printing out every line of output to `stdout` (which
+is rather slow), buffer in 1MB chunks and then dump them all at once. This has
+the biggest savings of what I've worked on so far.
 
-Difference btw grid and embedded: Comments on timing differences at most in 250 characters.
+myOptimization3+: I made two other optimizations that I wanted to talk about
+here. First, I removed all decimals and square roots. Since all we care about is
+< = >, you don't actually have to square root the vectors. You can just store
+the powers (x^2 + y^2 + z^2) and compare those directly. Second, I removed the
+ternary return operator and just did a subtraction. This removes a branch from
+the compare function which speeds things up. These both had smaller time
+speedups over stock so I didn't rank them highe .
+
+Difference between grid and embedded: The time to run was about 10x higher on the
+BeagleBone. I didn't include results here, and while there was variation, each
+unoptimized run on the grid took about .07s while the Bone took .7s. That's a
+lot faster! On the other hand though, the Bone is much more consistent as there
+isn't anything competing for resources.

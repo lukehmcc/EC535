@@ -1,0 +1,19 @@
+Names/BU usernames of team members:
+
+James Bond and Nomi
+
+Command:
+
+preparing_my_arguments_in_one_line_if_needed
+I_can_pipe_something_here ./simpleIO I_can_also_add_something_here
+
+Explanation:
+
+This code works because my inputs are awesome. This part should be around 600 characters (not strict, but please don't write an essay).
+
+Steps: 
+
+Explain the steps you have followed to find the command argument in another 600 characters
+- Using this tool, I found something interesting in the code.
+- The code normally works this way.
+- By doing blahblah, I can trick the program so it executes NeverExecutes().
