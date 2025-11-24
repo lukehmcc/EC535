@@ -13,6 +13,7 @@ TARGET := $(BUILD_DIR)/MyBitApp
 build:  $(SRCS) 
 	mkdir -p $(BUILD_DIR)
 	gcc -std=c11 -Wall -Wextra -O2 $(SRCS) -o $(TARGET)
+	gcc -ggdb -fno-stack-protector -o simpleIO simpleIO.c
 
 clean:
 	rm -rf ${BUILD_DIR}

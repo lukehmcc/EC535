@@ -1,0 +1,8 @@
+.mytimer*
+Module.*
+modules.*
+mytimer.ko
+mytimer.mod.*
+mytimer.o
+compile_commands.json
+.tmp_versions

@@ -1,0 +1,4 @@
+rootfs/
+ldd/
+rootfs.img
+stock-zImage
