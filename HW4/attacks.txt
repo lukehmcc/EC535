@@ -1,7 +1,49 @@
-Force overflow. The kernel tries to read the 256 bytes from the userspace, so if
-you supply an unterminated 300 byte input, it segfaults.
-```
+attack 1:
+user input:
 dd if=/dev/zero bs=1 count=16 > attack.bin
-dd if=/dev/zero bs=1 count=300 | tr '\0' 'A' >> attack.bin
+dd if=/dev/zero bs=1 count=300  >> attack.bin
 cat attack.bin > /dev/mytimer
-```
+
+expected correct output: ignore and return with no kernel panic
+
+description: force overflow in copy_from_user. the kernel tries to read the 256 bytes from the
+userspace, so if you supply an unterminated 300 byte input, it segfaults.
+
+fix to problem: the kernel should bounds check and make sure the input isn't too
+long.
+
+---
+
+attack 2:
+user input:
+for i in 1 2 3 4 5 6 7 8 9 10; do
+    while true; do
+        ./ktimer -s 0 "race" > /dev/null
+        ./ktimer -r > /dev/null
+    done &
+done
+
+expected correct output: handle race conditions properly and not to fail
+
+description: use-after-free. when hammering the kernel module with multiple
+threads calling & deleting timers all at the same time it can get in a state
+where a timer gets deleted and fires at the same time which causes a
+use-after-free kernel panic.
+
+fix to problem: make sure to synchronously delete the timer pointer & set it to
+null to fix it.
+
+--- 
+
+attack 3:
+dd if=/dev/zero of=header.bin bs=1 count=16 2>/dev/null
+dd if=/dev/zero bs=1 count=256 2>/dev/null | tr '\0' 'A' > body.bin
+cat header.bin body.bin > payload.bin
+echo "Payload size: $(wc -c < payload.bin) bytes"
+cat payload.bin > /dev/mytimer
+
+description: buffer overflow in strlen. The string is missing the null
+terminator so when it trys to copy from user it goes right past the end of the
+buffer and reads garbage memory.
+
+fix: Append null terminator at the end of the string forcefully.
